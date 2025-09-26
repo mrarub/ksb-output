@@ -15,6 +15,12 @@
 - **资源获取**：Windows、Linux系统所需的相关安装包与工具，可通过开发者提供的网盘链接获取（详见使用教程）。
 - **使用教程**：完整使用流程（含模拟器配置、ProxyPin设置、Token获取、工具导出等步骤）已整理至专属文档，可访问[https://mrarub.eu.org/docs/ksb](https://mrarub.eu.org/docs/ksb)查看详细指引。
 
+## 赞助支持
+<!-- 微信收款码 + 支付宝收款码：同一行排列，宽度统一设为120px（可按需修改） -->
+<img src="https://github.com/user-attachments/assets/20577ecb-9d6e-4216-9705-6a5ab2a37904" alt="微信收款码" width="200" style="display: inline-block; margin-right: 20px;">
+<img src="https://github.com/user-attachments/assets/da3fcf47-1d5a-43ec-ac8e-02c495f11282" alt="支付宝收款码" width="200" style="display: inline-block;">
+
+
 ## 开源初衷与倡议
 本项目的源代码完全开放，核心目的是为技术爱好者提供“题库导出”相关的技术逻辑参考（如代理配置、API交互、数据解析等），助力大家在合规范围内探索技术实现思路。
 

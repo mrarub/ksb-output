@@ -1,7 +1,9 @@
 import requests
 import os
+
 def load_config_headers():
-    config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'token.txt')
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'fetch.txt')
+    
     with open(config_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -18,11 +20,6 @@ url = "https://api.yisouti.com/questions/fetch"
 base_headers = load_config_headers()
 
 headers = base_headers.copy()
-headers.update({
-  "SIGN": "5abb3da5717f77b3f1259504962e391ec907c15dabab3d6c71d55873536dd96b",
-  "request-id": "9ba0a7c9-13a6-48ba-9c92-12460e54801a",
-  "TIMESTAMP": "1758703933904"
-})
 
 def get_tiku_id_from_config():
     config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.ini')

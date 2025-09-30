@@ -26,7 +26,7 @@ class requestsInputApp:
         
         self.title_label = ttk.Label(
             self.main_frame,
-            text="请输入reuests信息",
+            text="请输入requests信息",
             font=("Microsoft YaHei UI", 14, "bold")
         )
         self.title_label.pack(pady=(0, 20))

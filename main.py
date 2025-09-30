@@ -6,6 +6,7 @@ import subprocess
 import json
 import sys
 import threading
+import subprocess as sub
 
 
 class LoginApp:
@@ -16,28 +17,49 @@ class LoginApp:
         self.root.resizable(True, True)
         
         self._center_window(450, 500)
+        if not self._check_and_load_requests():
+            if not self._prompt_for_requests() or not self._check_and_load_requests():
+                messagebox.showerror("错误", "未找到有效的requests信息，程序无法启动")
+                sys.exit(1)
         
         self._create_ui()
-        
-        self._real_token = ""
-        
-        self._load_token_from_file()
     
-    def _load_token_from_file(self):
+    def _check_and_load_requests(self):
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             config_dir = os.path.join(current_dir, "config")
-            token_file_path = os.path.join(config_dir, "token.txt")
             
-            if os.path.exists(token_file_path):
-                with open(token_file_path, 'r', encoding='utf-8') as f:
-                    token_content = f.read().strip()
-                    
-                if token_content:
-                    self._real_token = token_content
-                    self.token_var.set("*" * 16)
+            required_files = ["list.txt", "fetch.txt", "ids.txt"]
+            valid_files = 0
+            
+            for filename in required_files:
+                file_path = os.path.join(config_dir, filename)
+                if os.path.exists(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+
+                    headers_pattern = r'headers\s*=\s*{[^}]*}'
+                    if re.search(headers_pattern, content, re.DOTALL | re.IGNORECASE):
+                        valid_files += 1
+            return valid_files == len(required_files)
         except Exception as e:
-            pass
+            print(f"检查requests文件时出错: {e}")
+            return False
+    
+    def _prompt_for_requests(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            xinxi_path = os.path.join(current_dir, "xinxi.py")
+            result = sub.run([sys.executable, xinxi_path], capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"运行xinxi.py时出错: {result.stderr}")
+                return False
+            
+            return True
+        except Exception as e:
+            print(f"提示输入requests时出错: {e}")
+            return False
     
     def _center_window(self, width, height):
         screen_width = self.root.winfo_screenwidth()
@@ -57,40 +79,9 @@ class LoginApp:
         )
         self.title_label.pack(pady=(0, 20))
         
-        self.form_frame = ttk.Frame(self.main_frame, padding=(10, 10, 10, 10))
-        self.form_frame.pack(fill=tk.X)
-        
-        self._create_token_input()
-        
-        self._create_save_button()
-        
-        self.separator = ttk.Separator(self.main_frame)
-        self.separator.pack(fill=tk.X, pady=10)
-        
         self._create_config_frame()
         
-        self.form_frame.columnconfigure(1, weight=1)
         self.config_frame.columnconfigure(1, weight=1)
-    
-    def _create_token_input(self):
-        self.token_var = tk.StringVar()
-        
-        self.token_label = ttk.Label(self.form_frame, text="Token:")
-        self.token_label.grid(row=0, column=0, sticky=tk.W, pady=5)
-        
-        self.token_entry = ttk.Entry(self.form_frame, textvariable=self.token_var)
-        self.token_entry.grid(row=0, column=1, columnspan=2, sticky=tk.EW, pady=5)
-        
-        self.token_entry.bind("<FocusIn>", self._on_token_entry_focus_in)
-        self.token_entry.bind("<FocusOut>", self._on_token_entry_focus_out)
-    
-    def _create_save_button(self):
-        self.save_button = ttk.Button(
-            self.form_frame,
-            text="保存",
-            command=self.save_token
-        )
-        self.save_button.grid(row=1, column=0, columnspan=2, pady=(10, 20))
     
     def _create_config_frame(self):
         self.config_frame = ttk.LabelFrame(
@@ -111,6 +102,8 @@ class LoginApp:
         self._create_save_directory_selector()
         
         self._create_export_button()
+        
+        self._create_change_info_button()
     
     def _create_question_bank_id_input(self):
         self.question_bank_id_var = tk.StringVar()
@@ -281,52 +274,7 @@ class LoginApp:
         messagebox.showerror("错误", error_message)
         self.export_button.config(state="normal")
     
-    def save_token(self):
-        token_text = self.token_var.get().strip()
-        
-        if not token_text:
-            messagebox.showwarning("警告", "请输入token信息")
-            return
-        
-        try:
-            if token_text.startswith("*") and self._real_token:
-                headers_content = self.parse_token_headers(self._real_token)
-            else:
-                headers_content = self.parse_token_headers(token_text)
-                self._real_token = token_text
-            
-            if not headers_content:
-                messagebox.showerror("错误", "无法解析token中的headers信息")
-                return
-            
-            config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
-            os.makedirs(config_dir, exist_ok=True)
-            token_file_path = os.path.join(config_dir, "token.txt")
-            with open(token_file_path, 'w', encoding='utf-8') as f:
-                f.write(headers_content)
-            
-            self.token_var.set("*" * 16)
-            messagebox.showinfo("成功", "Token信息已保存到token.txt文件")
-            
-        except Exception as e:
-            messagebox.showerror("错误", f"保存失败: {str(e)}")
-    
-    def parse_token_headers(self, token_text):
-        headers_pattern = r'headers\s*=\s*{[^}]*}'
-        headers_match = re.search(headers_pattern, token_text, re.DOTALL | re.IGNORECASE)
-        
-        if headers_match:
-            return headers_match.group(0)
-        
-        return None
-        
-    def _on_token_entry_focus_in(self, event):
-        if self._real_token and self.token_var.get().startswith("*"):
-            self.token_var.set(self._real_token)
-            
-    def _on_token_entry_focus_out(self, event):
-        if self._real_token and not self.token_var.get().startswith("*"):
-            self.token_var.set("*" * 16)
+
 
     def get_question_banks(self):
         try:
@@ -419,6 +367,27 @@ class LoginApp:
                 self.question_bank_id_var.set(paperid)
             except:
                 pass
+    
+    def _create_change_info_button(self):
+        self.change_info_button = ttk.Button(
+            self.config_frame,
+            text="更改信息",
+            command=self.change_info
+        )
+        self.change_info_button.grid(row=6, column=0, columnspan=3, pady=(10, 0), sticky=tk.EW)
+    
+    def change_info(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            xinxi_path = os.path.join(current_dir, "xinxi.py")
+
+            result = subprocess.run([sys.executable, xinxi_path], capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                messagebox.showerror("错误", f"运行xinxi.py时出错: {result.stderr}")
+            
+        except Exception as e:
+            messagebox.showerror("错误", f"执行更改信息时出错: {str(e)}")
 
 
 if __name__ == "__main__":

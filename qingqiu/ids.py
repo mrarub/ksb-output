@@ -3,8 +3,10 @@ import os
 import time
 import random
 import json
+
 def load_config_headers():
-    config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'token.txt')
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'ids.txt')
+    
     with open(config_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -64,11 +66,6 @@ url = "https://api.yisouti.com/questions/ids"
 base_headers = load_config_headers()
 
 headers = base_headers.copy()
-headers.update({
-  "SIGN": "8dcb8b57765e3b4c2a0ddb840d96b3936bd1801093e2cca0c3c8678072ff69c0",
-  "request-id": "e8ab08d9-e6d1-43e4-aeb5-a607f430142e",
-  "TIMESTAMP": "1758703934147"
-})
 
 ids_list = get_ids_from_file()
 

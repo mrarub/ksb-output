@@ -90,10 +90,18 @@ if paper_id:
                 print(f"等待{wait_time:.2f}秒后请求下一个题目...")
                 time.sleep(wait_time)
             
-            data = f"""{{"ids":"[{question_id}]","source":"顺序练习","paperid":"{paper_id}"}}"""
-        
+            # 构造请求体为 dict
+            data = {
+                "ids": f"[{question_id}]",
+                "source": "顺序练习",
+                "paperid": paper_id
+            }
+
+            # 确保 headers 有正确的 Content-Type
+            headers["Content-Type"] = "application/json; charset=utf-8"
+
             print(f"正在处理题目ID: {question_id} ({i+1}/{len(ids_list)})")
-            res = requests.post(url, headers=headers, data=data)
+            res = requests.post(url, headers=headers, json=data)
             
             with open(output_file_path, 'a', encoding='utf-8') as f:
                 f.write(f"题目ID: {question_id}\n")

@@ -13,6 +13,8 @@ def process_timu_json_file(file_path, output_file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
+
+        content = content.replace('<br>', '')
             
         if not content.strip():
             print("文件内容为空")

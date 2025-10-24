@@ -9,6 +9,36 @@ import threading
 import subprocess as sub
 
 
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+        self.widget.bind("<Enter>", self.showtip)
+        self.widget.bind("<Leave>", self.hidetip)
+
+    def showtip(self, event=None):
+        self.x = event.x_root + 25
+        self.y = event.y_root + 25
+        if self.tipwindow or not self.text:
+            return
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry(f"+{self.x}+{self.y}")
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                         background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                         font=("tahoma", "9", "normal"))
+        label.pack(ipadx=1)
+
+    def hidetip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
+
 class LoginApp:
     
     def __init__(self, root):
@@ -97,6 +127,8 @@ class LoginApp:
         
         self._create_ai_analysis_selector()
         
+        self._create_wait_mode_selector()
+        
         self._create_output_format_selector()
         
         self._create_save_directory_selector()
@@ -155,14 +187,39 @@ class LoginApp:
         )
         self.ai_analysis_combobox.grid(row=2, column=1, columnspan=2, sticky=tk.EW, pady=5)
     
+    def _create_wait_mode_selector(self):
+        self.wait_mode_var = tk.StringVar(value="普通模式")
+        
+        self.wait_mode_label = ttk.Label(self.config_frame, text="等待模式:")
+        self.wait_mode_label.grid(row=3, column=0, sticky=tk.W, pady=5)
+        
+        self.wait_mode_frame = ttk.Frame(self.config_frame)
+        self.wait_mode_frame.grid(row=3, column=1, columnspan=2, sticky=tk.W, pady=5)
+        
+        modes = [
+            ("普通模式", "普通模式", "等待时间：0.5-1.5秒随机，适合快速获取题目"),
+            ("防检测模式", "防检测模式", "等待时间：1.5-3秒随机，降低被检测风险"),
+            ("增强防检测模式", "增强防检测模式", "等待时间：1.5-5秒随机，每800道题目后额外等待3-5分钟")
+        ]
+        
+        for text, value, tooltip in modes:
+            radio = ttk.Radiobutton(
+                self.wait_mode_frame,
+                text=text,
+                variable=self.wait_mode_var,
+                value=value
+            )
+            radio.pack(side=tk.LEFT, padx=5)
+            Tooltip(radio, tooltip)
+    
     def _create_output_format_selector(self):
         self.output_format_var = tk.StringVar(value="md")
         
         self.output_format_label = ttk.Label(self.config_frame, text="输出格式:")
-        self.output_format_label.grid(row=3, column=0, sticky=tk.W, pady=5)
+        self.output_format_label.grid(row=4, column=0, sticky=tk.W, pady=5)
         
         self.radio_frame = ttk.Frame(self.config_frame)
-        self.radio_frame.grid(row=3, column=1, columnspan=2, sticky=tk.W, pady=5)
+        self.radio_frame.grid(row=4, column=1, columnspan=2, sticky=tk.W, pady=5)
         
         formats = [
             ("markdown", "md"),
@@ -182,20 +239,20 @@ class LoginApp:
         self.save_dir_var = tk.StringVar()
         
         self.save_dir_label = ttk.Label(self.config_frame, text="保存目录:")
-        self.save_dir_label.grid(row=4, column=0, sticky=tk.W, pady=5)
+        self.save_dir_label.grid(row=5, column=0, sticky=tk.W, pady=5)
         
         self.save_dir_entry = ttk.Entry(
             self.config_frame,
             textvariable=self.save_dir_var
         )
-        self.save_dir_entry.grid(row=4, column=1, sticky=tk.EW, pady=5)
+        self.save_dir_entry.grid(row=5, column=1, sticky=tk.EW, pady=5)
         
         self.browse_button = ttk.Button(
             self.config_frame,
             text="浏览...",
             command=self.browse_directory
         )
-        self.browse_button.grid(row=4, column=2, padx=(5, 0), pady=5)
+        self.browse_button.grid(row=5, column=2, padx=(5, 0), pady=5)
     
     def _create_export_button(self):
         self.export_button = ttk.Button(
@@ -203,7 +260,7 @@ class LoginApp:
             text="导出",
             command=self.export_config
         )
-        self.export_button.grid(row=5, column=0, columnspan=3, pady=(10, 0), sticky=tk.EW)
+        self.export_button.grid(row=6, column=0, columnspan=3, pady=(10, 0), sticky=tk.EW)
         
     def export_config(self):
         question_bank_id = self.question_bank_id_var.get().strip()
@@ -227,6 +284,8 @@ class LoginApp:
             ai_analysis = self.ai_analysis_var.get()
             jiexi = "true" if ai_analysis == "开启" else "false"
             
+            wait_mode = self.wait_mode_var.get()
+            
             save_directory = self.save_dir_var.get().strip()
             
             output_format = self.output_format_var.get()
@@ -239,6 +298,7 @@ class LoginApp:
                 f.write("[Config]\n")
                 f.write(f"tiku-id = {question_bank_id}\n")
                 f.write(f"jiexi = {jiexi}\n")
+                f.write(f"wait-mode = {wait_mode}\n")
                 f.write(f"geshi = {output_format}\n")
                 f.write(f"lujing = {save_directory}\n")
             
@@ -374,7 +434,7 @@ class LoginApp:
             text="更改信息",
             command=self.change_info
         )
-        self.change_info_button.grid(row=6, column=0, columnspan=3, pady=(10, 0), sticky=tk.EW)
+        self.change_info_button.grid(row=7, column=0, columnspan=3, pady=(10, 0), sticky=tk.EW)
     
     def change_info(self):
         try:

@@ -37,6 +37,43 @@ def get_ids_from_file():
         print(f"错误：无法从timu-id.txt获取ids - {e}")
         return []
 
+def get_wait_mode_from_config():
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.ini')
+        
+        if not os.path.exists(config_path):
+            return "普通模式"  # 默认模式
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        for line in content.split('\n'):
+            line = line.strip()
+            if line.startswith('wait-mode = '):
+                wait_mode = line.split('=', 1)[1].strip().strip('"').strip("'")
+                return wait_mode
+        
+        return "普通模式"  
+        
+    except Exception as e:
+        print(f"错误：读取等待模式配置时发生异常 - {e}")
+        return "普通模式"  
+
+def get_wait_time(wait_mode, question_count):
+    if wait_mode == "普通模式":
+        return random.uniform(0.5, 1.5)
+    elif wait_mode == "防检测模式":
+        return random.uniform(1.5, 3.0)
+    elif wait_mode == "增强防检测模式":
+        if question_count > 0 and question_count % 800 == 0:
+            long_wait = random.uniform(180, 300)
+            print(f"已获取{question_count}道题目，进入增强防检测等待，等待{long_wait/60:.2f}分钟...")
+            return long_wait
+        else:
+            return random.uniform(1.5, 5.0)
+    else:
+        return random.uniform(0.5, 1.5)
+
 def get_tiku_id_from_config():
     try:
         config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.ini')
@@ -70,6 +107,7 @@ headers = base_headers.copy()
 ids_list = get_ids_from_file()
 
 paper_id = get_tiku_id_from_config()
+wait_mode = get_wait_mode_from_config()
 
 output_file_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'timu-json.txt')
 
@@ -78,6 +116,7 @@ os.makedirs(config_dir, exist_ok=True)
 
 if paper_id:
     print(f"成功获取tiku-id: {paper_id}")
+    print(f"当前等待模式: {wait_mode}")
     
     with open(output_file_path, 'w', encoding='utf-8') as f:
         f.write('')
@@ -86,18 +125,19 @@ if paper_id:
     for i, question_id in enumerate(ids_list):
         try:
             if i > 0:
-                wait_time = random.uniform(0.5, 1.5)
-                print(f"等待{wait_time:.2f}秒后请求下一个题目...")
+                wait_time = get_wait_time(wait_mode, i)
+                if wait_time >= 60:  # 如果等待时间超过1分钟，特别提示
+                    print(f"进入长时间等待，等待{wait_time/60:.2f}分钟...")
+                else:
+                    print(f"等待{wait_time:.2f}秒后请求下一个题目...")
                 time.sleep(wait_time)
             
-            # 构造请求体为 dict
             data = {
                 "ids": f"[{question_id}]",
                 "source": "顺序练习",
                 "paperid": paper_id
             }
 
-            # 确保 headers 有正确的 Content-Type
             headers["Content-Type"] = "application/json; charset=utf-8"
 
             print(f"正在处理题目ID: {question_id} ({i+1}/{len(ids_list)})")

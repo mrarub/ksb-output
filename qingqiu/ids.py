@@ -63,14 +63,14 @@ def get_wait_time(wait_mode, question_count):
     if wait_mode == "普通模式":
         return random.uniform(0.5, 1.5)
     elif wait_mode == "防检测模式":
-        return random.uniform(1.5, 3.0)
+        return random.uniform(0.5, 5.0)
     elif wait_mode == "增强防检测模式":
         if question_count > 0 and question_count % 800 == 0:
             long_wait = random.uniform(180, 300)
             print(f"已获取{question_count}道题目，进入增强防检测等待，等待{long_wait/60:.2f}分钟...")
             return long_wait
         else:
-            return random.uniform(1.5, 5.0)
+            return random.uniform(0.5, 8.0)
     else:
         return random.uniform(0.5, 1.5)
 
